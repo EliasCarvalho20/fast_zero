@@ -179,3 +179,6 @@ pyrightconfig.json
 
 # DATABASE
 fast_zero.db
+
+# Requests
+http/
