@@ -12,6 +12,9 @@ pydantic = {extras = ["email"], version = "^2.10.5"}
 sqlalchemy = "^2.0.38"
 pydantic-settings = "^2.7.1"
 alembic = "^1.14.1"
+pwdlib = {extras = ["argon2"], version = "^0.2.1"}
+python-multipart = "^0.0.20"
+pyjwt = "^2.10.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
@@ -38,7 +41,8 @@ extend-exclude = ["migrations"]
 
 [tool.ruff.lint]
 preview = true
-select = ["F", "E", "W", "PL", "PT"]
+select = ["I", "F", "E", "W", "PL", "PT"]
+ignore = ["E402", "E501", "F811"]
 
 [tool.ruff.format]
 preview = true
