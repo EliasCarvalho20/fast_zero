@@ -181,4 +181,7 @@ pyrightconfig.json
 fast_zero.db
 
 # Requests
-http/
+*.http
+
+# migrations
+migrations/
