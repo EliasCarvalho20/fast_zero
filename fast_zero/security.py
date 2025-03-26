@@ -15,7 +15,7 @@ from fast_zero.models import User
 from fast_zero.settings import Settings
 
 pwd_context = PasswordHash.recommended()
-oauth2_schema = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_schema = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 ACCESS_TOKEN_EXPIRE_MINUTES = Settings().ACCESS_TOKEN_EXPIRE_MINUTES
 ALGORITHM = Settings().ALGORITHM
@@ -38,12 +38,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_acess_token(data_payload: dict):
     to_encode = data_payload.copy()
-    to_encode.update(
-        {
-            "exp": datetime.now(tz=ZoneInfo("UTC"))
-            + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        }
-    )
+    to_encode.update({
+        "exp": datetime.now(tz=ZoneInfo("UTC"))
+        + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    })
 
     return encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
