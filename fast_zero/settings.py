@@ -6,7 +6,7 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    DATABASE_URL: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     ALGORITHM: str
+    DATABASE_URL: str
     SECRET_KEY: str

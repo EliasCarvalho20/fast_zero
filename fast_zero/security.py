@@ -3,16 +3,15 @@ from http import HTTPStatus
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
-from fastapi.params import Depends
 from fastapi.security import OAuth2PasswordBearer
-from jwt import DecodeError, decode, encode
+from jwt import decode, encode
+from jwt.exceptions import DecodeError, ExpiredSignatureError
 from pwdlib import PasswordHash
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
-from fast_zero.database import get_session
 from fast_zero.models import User
 from fast_zero.settings import Settings
+from fast_zero.types.types_app import T_OAuthPassBearer, T_Session
 
 pwd_context = PasswordHash.recommended()
 oauth2_schema = OAuth2PasswordBearer(tokenUrl="auth/token")
@@ -20,6 +19,37 @@ oauth2_schema = OAuth2PasswordBearer(tokenUrl="auth/token")
 ACCESS_TOKEN_EXPIRE_MINUTES = Settings().ACCESS_TOKEN_EXPIRE_MINUTES
 ALGORITHM = Settings().ALGORITHM
 SECRET_KEY = Settings().SECRET_KEY
+
+
+async def get_current_user(session: T_Session, token: T_OAuthPassBearer):
+    credentials_exception = HTTPException(
+        status_code=HTTPStatus.UNAUTHORIZED,
+        detail="Could not validate credentials.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        subject_email: str = payload.get("sub")
+        if subject_email is None:
+            raise credentials_exception
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except DecodeError:
+        raise credentials_exception
+
+    user = await session.scalar(
+        select(User).where(User.email == subject_email)
+    )
+
+    if user is None:
+        raise credentials_exception
+
+    return user
 
 
 def get_password_hash(password: str) -> str:
@@ -38,34 +68,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_acess_token(data_payload: dict):
     to_encode = data_payload.copy()
-    to_encode.update({
-        "exp": datetime.now(tz=ZoneInfo("UTC"))
-        + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    })
+    to_encode.update(
+        {
+            "exp": datetime.now(tz=ZoneInfo("UTC"))
+            + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        }
+    )
 
     return encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def get_current_user(
-    session: Session = Depends(get_session),
-    token: str = Depends(oauth2_schema),
-):
-    credentials_exception = HTTPException(
-        status_code=HTTPStatus.UNAUTHORIZED,
-        detail="Could not validate credentials.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        subject_email: str = payload.get("sub")
-        if subject_email is None:
-            raise credentials_exception
-    except DecodeError:
-        raise credentials_exception
-
-    user = session.scalar(select(User).where(User.email == subject_email))
-
-    if user is None:
-        raise credentials_exception
-
-    return user

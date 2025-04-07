@@ -8,30 +8,39 @@ from sqlalchemy.exc import IntegrityError
 from fast_zero.models import User
 from fast_zero.schemas import Message, UserList, UserPublic, UserSchema
 from fast_zero.security import get_password_hash
-from fast_zero.types.types_annotated import T_CurrentUser, T_Session
+from fast_zero.types.types_app import T_Session
+from fast_zero.types.types_users import T_CurrentUser, T_ReadUsersFilter
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/", response_model=UserList)
-def read_users(
-    session: T_Session, offset: int = 0, limit: int = 100
+async def read_users(
+    session: T_Session, filter_users: T_ReadUsersFilter
 ) -> dict[str, Sequence[User]]:
-    users = session.scalars(select(User).offset(offset).limit(limit)).all()
-    return {"users": users}
+    query = await session.scalars(
+        select(User).offset(filter_users.offset).limit(filter_users.limit)
+    )
+
+    return {"users": query.all()}
 
 
 @router.post("/", status_code=HTTPStatus.CREATED, response_model=UserPublic)
-def create_user(user: UserSchema, session: T_Session) -> User:
-    if session.scalar(select(User).where(User.username == user.username)):
-        raise HTTPException(
-            status_code=HTTPStatus.CONFLICT,
-            detail="Username already exists",
+async def create_user(user: UserSchema, session: T_Session) -> User:
+    if db_user := await session.scalar(
+        select(User).where(
+            (User.username == user.username) | (User.email == user.email)
         )
-    if session.scalar(select(User).where(User.email == user.email)):
-        raise HTTPException(
-            status_code=HTTPStatus.CONFLICT, detail="Email already exists"
-        )
+    ):
+        if db_user.username == user.username:
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT,
+                detail="Username already exists",
+            )
+        if db_user.email == user.email:
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT, detail="Email already exists"
+            )
 
     db_user = User(
         username=user.username,
@@ -39,14 +48,14 @@ def create_user(user: UserSchema, session: T_Session) -> User:
         email=user.email,
     )
     session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
+    await session.commit()
+    await session.refresh(db_user)
 
     return db_user
 
 
 @router.put("/{user_id}", response_model=UserPublic)
-def update_users(
+async def update_users(
     user_id: int,
     user: UserSchema,
     session: T_Session,
@@ -63,8 +72,8 @@ def update_users(
         current_user.email = user.email
         current_user.password = get_password_hash(user.password)
 
-        session.commit()
-        session.refresh(current_user)
+        await session.commit()
+        await session.refresh(current_user)
 
         return current_user
 
@@ -76,7 +85,7 @@ def update_users(
 
 
 @router.delete("/{user_id}", response_model=Message)
-def delete_users(
+async def delete_users(
     user_id: int,
     session: T_Session,
     current_user: T_CurrentUser,
@@ -87,7 +96,7 @@ def delete_users(
             detail="Not enough permission",
         )
 
-    session.delete(current_user)
-    session.commit()
+    await session.delete(current_user)
+    await session.commit()
 
     return {"message": "User deleted successfully"}
