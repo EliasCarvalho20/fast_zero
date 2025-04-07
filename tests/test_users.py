@@ -84,7 +84,7 @@ def test_update_without_permission(client, user, token):
 
 def test_user_not_found(client, user):
     response = client.put(
-        f"{route}/2",
+        f"{route}/3",
         json={
             "id": "2",
             "username": "123",
@@ -106,9 +106,9 @@ def test_user_deleted(client, user, token):
     assert response.json() == {"message": "User deleted successfully"}
 
 
-def test_delete_without_permission(client, user, token):
+def test_delete_without_permission(client, another_user, token):
     response = client.delete(
-        f"{route}/2",
+        f"{route}/{another_user.id}",
         headers={"Authorization": f"Bearer {token}"},
     )
 
@@ -116,8 +116,8 @@ def test_delete_without_permission(client, user, token):
     assert response.json() == {"detail": "Not enough permission"}
 
 
-def test_user_deleted_not_found(client, user):
-    response = client.delete(f"{route}/2")
+def test_user_deleted_not_found(client, another_user):
+    response = client.delete(f"{route}/{another_user.id}")
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
     assert response.json() == {"detail": "Not authenticated"}
