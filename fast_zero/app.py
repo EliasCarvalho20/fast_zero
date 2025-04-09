@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from fast_zero.routes import auth, users, todos
+from fast_zero.routes import auth, todos, users
 from fast_zero.schemas import Message
 
 app = FastAPI()

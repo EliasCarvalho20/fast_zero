@@ -68,11 +68,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_acess_token(data_payload: dict):
     to_encode = data_payload.copy()
-    to_encode.update(
-        {
-            "exp": datetime.now(tz=ZoneInfo("UTC"))
-            + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        }
-    )
+    to_encode.update({
+        "exp": datetime.now(tz=ZoneInfo("UTC"))
+        + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    })
 
     return encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

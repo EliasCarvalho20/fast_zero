@@ -8,18 +8,20 @@ from sqlalchemy.exc import IntegrityError
 from fast_zero.models import User
 from fast_zero.schemas import Message, UserList, UserPublic, UserSchema
 from fast_zero.security import get_password_hash
-from fast_zero.types.types_app import T_Session
-from fast_zero.types.types_users import T_CurrentUser, T_ReadUsersFilter
+from fast_zero.types.types_app import T_PaginationFilter, T_Session
+from fast_zero.types.types_users import T_CurrentUser
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/", response_model=UserList)
 async def read_users(
-    session: T_Session, filter_users: T_ReadUsersFilter
+    session: T_Session, pagination_filter: T_PaginationFilter
 ) -> dict[str, Sequence[User]]:
     query = await session.scalars(
-        select(User).offset(filter_users.offset).limit(filter_users.limit)
+        select(User)
+        .offset(pagination_filter.offset)
+        .limit(pagination_filter.limit)
     )
 
     return {"users": query.all()}

@@ -33,9 +33,7 @@ async def login_for_acess_token(
 
 
 @router.post("/refresh_token", response_model=Token)
-async def refresh_access_token(
-    user: T_CurrentUser
-) -> dict[str, str]:
+async def refresh_access_token(user: T_CurrentUser) -> dict[str, str]:
     new_access_token = create_acess_token(data_payload={"sub": user.email})
 
     return {"access_token": new_access_token, "token_type": "Bearer"}
