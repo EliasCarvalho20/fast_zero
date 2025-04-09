@@ -3,7 +3,6 @@ from datetime import datetime
 
 import pytest
 import pytest_asyncio
-from factory import Factory, LazyAttribute, Sequence, post_generation
 from fastapi.testclient import TestClient
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -11,26 +10,8 @@ from sqlalchemy.pool import StaticPool
 
 from fast_zero.app import app
 from fast_zero.database import get_session
-from fast_zero.models import User, table_registry
-from fast_zero.security import get_password_hash
-
-
-class UserFactory(Factory):
-    class Meta:
-        model = User
-
-    username = Sequence(lambda n: f"test_user{n}")
-    email = LazyAttribute(lambda obj: f"{obj.username}@test.com")
-    password = LazyAttribute(
-        lambda obj: get_password_hash(f"{obj.username}@test.com")
-    )
-
-    @post_generation
-    def clean_password(self, create, extracted, **kwargs):
-        if extracted:
-            self.clean_password = extracted
-        else:
-            self.clean_password = f"{self.username}@test.com"
+from fast_zero.models import table_registry
+from tests.factories import TodoFactory, UserFactory
 
 
 @pytest_asyncio.fixture
@@ -111,3 +92,20 @@ def _mock_db_time(*, model, time=datetime(2025, 1, 1)):
 @pytest.fixture
 def mock_db_time():
     return _mock_db_time
+
+
+@pytest_asyncio.fixture
+async def todo(client, token):
+    todo_factory = TodoFactory()
+
+    todo = client.post(
+        "/todos",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "title": todo_factory.title,
+            "description": todo_factory.description,
+            "state": todo_factory.state,
+        },
+    ).json()
+
+    return todo

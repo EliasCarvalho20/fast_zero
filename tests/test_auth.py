@@ -36,7 +36,7 @@ def test_refresh_token(client, user):
     assert response.status_code == HTTPStatus.OK
     token = response.json()
 
-    with freeze_time("2025-01-01 00:15:00"):
+    with freeze_time("2025-01-07 23:59:00"):
         response = client.post(
             f"{route}/refresh_token",
             headers={"Authorization": f"Bearer {token['access_token']}"},
@@ -56,7 +56,7 @@ def test_token_expired(client, user):
     assert response.status_code == HTTPStatus.OK
     token = response.json()
 
-    with freeze_time("2025-01-01 01:00:00"):
+    with freeze_time("2025-01-08 00:00:00"):
         response = client.delete(
             "/users/1",
             headers={"Authorization": f"Bearer {token['access_token']}"},
@@ -75,7 +75,7 @@ def test_token_expired_dont_refresh(client, user):
     assert response.status_code == HTTPStatus.OK
     token = response.json()
 
-    with freeze_time("2025-01-01 00:31:00"):
+    with freeze_time("2025-01-08 00:00:00"):
         response = client.post(
             f"{route}/refresh_token",
             headers={"Authorization": f"Bearer {token['access_token']}"},

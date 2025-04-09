@@ -4,7 +4,7 @@ from datetime import datetime
 import pytest
 from sqlalchemy import select
 
-from fast_zero.models import User
+from fast_zero.models import Todo, User
 
 
 @pytest.mark.asyncio
@@ -30,4 +30,25 @@ async def test_create_user(session, mock_db_time):
         "password": new_user.password,
         "created_at": time,
         "update_at": time,
+    }
+
+
+@pytest.mark.asyncio
+async def test_make_todo(session, user):
+    new_todo = Todo(
+        title="test", description="test", state="draft", user_id=user.id
+    )
+    session.add(new_todo)
+    await session.commit()
+
+    todo = await session.scalar(
+        select(Todo).where(Todo.title == new_todo.title)
+    )
+
+    assert asdict(todo) == {
+        "id": 1,
+        "title": new_todo.title,
+        "description": new_todo.description,
+        "state": new_todo.state,
+        "user_id": user.id,
     }
