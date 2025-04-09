@@ -16,6 +16,7 @@ pwdlib = {extras = ["argon2"], version = "^0.2.1"}
 python-multipart = "^0.0.20"
 pyjwt = "^2.10.1"
 aiosqlite = "^0.21.0"
+psycopg = {extras = ["binary"], version = "^3.2.6"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
@@ -42,7 +43,7 @@ asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 79
-extend-exclude = ["migrations"]
+extend-exclude = ["migrations", "tests"]
 
 [tool.ruff.lint]
 preview = true
