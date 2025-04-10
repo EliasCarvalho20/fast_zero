@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from datetime import datetime
+from testcontainers.postgres import PostgresContainer
 
 import pytest
 import pytest_asyncio
@@ -11,6 +12,7 @@ from sqlalchemy.pool import StaticPool
 from fast_zero.app import app
 from fast_zero.database import get_session
 from fast_zero.models import table_registry
+from fast_zero.settings import Settings
 from tests.factories import TodoFactory, UserFactory
 
 
@@ -26,13 +28,14 @@ def client(session):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(scope="session")
+def engine():
+    with PostgresContainer("postgres:16", driver="psycopg") as postgres:
+        yield create_async_engine(postgres.get_connection_url())
+
+
 @pytest_asyncio.fixture
-async def session():
-    engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+async def session(engine):
     async with engine.begin() as conn:
         await conn.run_sync(table_registry.metadata.create_all)
 
